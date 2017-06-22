@@ -42,14 +42,17 @@ class HTTPHandler(BaseHTTPRequestHandler):
         record = params.get('record')
         host = params.get('host')
         domain = params.get('domain')
+
         if not token or token != PROPS.get('token'):
             html = 'invalid request'
         elif not host:
             html = 'dns host is necessary'
         else:
+            passed = 1  # If the parameter is not complete, will not update
             if not record:  # get record
                 if not domain:
                     html = 'missing dns record and domain'
+                    passed = 0 # will not update dns record
                 else:
                     host_domain = '%s.%s' % (host, domain)
                     if addr_record.has_key(host_domain):
@@ -58,17 +61,17 @@ class HTTPHandler(BaseHTTPRequestHandler):
                         record = self._dns.get_dns_record(host, domain)
                         # add in address record dictionary
                         addr_record[host_domain] = record
-
-                    # update dns record
-                    try:
-                        if not record_ip.has_key(record):
-                            record_ip[record] = dns.get_dns_ip(
-                                record)  # get dns ip and store it
-                        if record_ip[record] != request_ip:
-                            dns.update(record, host, request_ip)
-                            record_ip[record] = request_ip
-                    except Exception, ex:
-                        html = 'failure:' + str(ex)
+            if passed = 1
+            # update dns record
+                try:
+                    if not record_ip.has_key(record):
+                        record_ip[record] = dns.get_dns_ip(
+                            record)  # get dns ip and store it
+                    if record_ip[record] != request_ip:
+                        dns.update(record, host, request_ip)
+                        record_ip[record] = request_ip
+                except Exception, ex:
+                    html = 'failure:' + str(ex)
 
         # 页面输出模板字符串
         self.send_response(200)  # 设置响应状态码
