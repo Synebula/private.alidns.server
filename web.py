@@ -61,7 +61,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
                         record = self._dns.get_dns_record(host, domain)
                         # add in address record dictionary
                         addr_record[host_domain] = record
-            if passed = 1
+            if passed == 1:
             # update dns record
                 try:
                     if not record_ip.has_key(record):
