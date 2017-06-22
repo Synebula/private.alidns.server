@@ -46,28 +46,29 @@ class HTTPHandler(BaseHTTPRequestHandler):
             html = 'invalid request'
         elif not host:
             html = 'dns host is necessary'
-        elif not record:  # get record
-            if not domain:
-                html = 'missing dns record and domain'
-            else:
-                host_domain = '%s.%s' % (host, domain)
-                if addr_record.has_key(host_domain):
-                    record = addr_record.get(host_domain)
-                else:
-                    record = self._dns.get_dns_record(host, domain)
-                    # add in address record dictionary
-                    addr_record[host_domain] = record
         else:
-            try:
-                if not record_ip.has_key(record):
-                    record_ip[record] = dns.get_dns_ip(
-                        record)  # get dns ip and store it
-                if record_ip[record] != request_ip:
-                    print record_ip
-                    dns.update(record, host, request_ip)
-                    record_ip[record] = request_ip
-            except Exception, ex:
-                html = 'failure:' + str(ex)
+            if not record:  # get record
+                if not domain:
+                    html = 'missing dns record and domain'
+                else:
+                    host_domain = '%s.%s' % (host, domain)
+                    if addr_record.has_key(host_domain):
+                        record = addr_record.get(host_domain)
+                    else:
+                        record = self._dns.get_dns_record(host, domain)
+                        # add in address record dictionary
+                        addr_record[host_domain] = record
+
+                    # update dns record
+                    try:
+                        if not record_ip.has_key(record):
+                            record_ip[record] = dns.get_dns_ip(
+                                record)  # get dns ip and store it
+                        if record_ip[record] != request_ip:
+                            dns.update(record, host, request_ip)
+                            record_ip[record] = request_ip
+                    except Exception, ex:
+                        html = 'failure:' + str(ex)
 
         # 页面输出模板字符串
         self.send_response(200)  # 设置响应状态码
