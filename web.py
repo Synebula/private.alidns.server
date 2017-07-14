@@ -48,31 +48,40 @@ class HTTPHandler(BaseHTTPRequestHandler):
         elif not host:
             html = 'dns host is necessary'
         else:
-            passed = 1  # If the parameter is not complete, will not update
             if not record:  # get record
                 if not domain:
-                    html = 'missing dns record and domain'
-                    passed = 0 # will not update dns record
+                    self.response_content('missing dns record and domain')
+                    return
+
+                host_domain = '%s.%s' % (host, domain)
+                if addr_record.has_key(host_domain):
+                    record = addr_record.get(host_domain)
                 else:
-                    host_domain = '%s.%s' % (host, domain)
-                    if addr_record.has_key(host_domain):
-                        record = addr_record.get(host_domain)
-                    else:
-                        record = self._dns.get_dns_record(host, domain)
+                    record = self._dns.get_dns_record(host, domain)
+                    if record:
                         # add in address record dictionary
                         addr_record[host_domain] = record
-            if passed == 1:
-            # update dns record
-                try:
-                    if not record_ip.has_key(record):
-                        record_ip[record] = dns.get_dns_ip(
-                            record)  # get dns ip and store it
-                    if record_ip[record] != request_ip:
-                        dns.update(record, host, request_ip)
-                        record_ip[record] = request_ip
-                except Exception, ex:
-                    html = 'failure:' + str(ex)
+                    else:
+                        record = self._dns.add_dns_record(
+                            host, domain, request_ip)
+                        addr_record[host_domain] = record
+                        # passed = 0 # don't have this record in ali dns server
 
+            # update dns record
+            try:
+                if not record_ip.has_key(record):
+                    record_ip[record] = dns.get_dns_ip(
+                        record)  # get dns ip and store it
+                if record_ip[record] != request_ip:
+                    dns.update(record, host, request_ip)
+                    record_ip[record] = request_ip
+            except Exception, ex:
+                html = 'failure:' + str(ex)
+
+            self.response_content(html)
+
+    def response_content(self, html):
+        '''response the request'''
         # 页面输出模板字符串
         self.send_response(200)  # 设置响应状态码
         self.send_header("text", "Contect")  # 设置响应头
@@ -82,8 +91,11 @@ class HTTPHandler(BaseHTTPRequestHandler):
 
 def start_server(ipaddress, port):
     '''启动服务函数'''
-    http_server = HTTPServer((ipaddress, int(port)), HTTPHandler)
-    http_server.serve_forever()  # 设置一直监听并接收请求
+    try:
+        http_server = HTTPServer((ipaddress, int(port)), HTTPHandler)
+        http_server.serve_forever()  # 设置一直监听并接收请求
+    except Exception, ex:
+        logger.log(str(ex))
 
 
 start_server(PROPS.get('ipaddress'), PROPS.get('port'))  # 启动服务，监听8001端口
